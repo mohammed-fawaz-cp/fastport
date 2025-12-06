@@ -1,0 +1,33 @@
+{
+  "name": "fastport-server",
+  "version": "1.0.0",
+  "description": "Multi-session publish-subscribe broker with WebSocket",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "node tests/complete_test.js",
+    "test:integration": "node tests/integration_test.js",
+    "generate-key": "node utils/generate_key.js"
+  },
+  "keywords": [
+    "websocket",
+    "pubsub",
+    "mqtt",
+    "broker"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "dotenv": "^17.2.3",
+    "express": "^4.18.2",
+    "express-rate-limit": "^8.2.1",
+    "firebase-admin": "^13.6.0",
+    "pg": "^8.16.3",
+    "sequelize": "^6.37.7",
+    "sqlite3": "^5.1.7",
+    "uuid": "^9.0.1",
+    "ws": "^8.14.2"
+  }
+}

@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FastPort Admin</title>
+    <style>
+        :root {
+            /* Dark Mode (Default) */
+            --bg: #0f172a;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --glass: rgba(30, 41, 59, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --accent: #38bdf8;
+            --accent-glow: rgba(56, 189, 248, 0.5);
+            --danger: #ef4444;
+            --success: #22c55e;
+            --font: 'Inter', system-ui, -apple-system, sans-serif;
+            --card-radius: 16px;
+        }
+
+        [data-theme="light"] {
+            /* Light Mode */
+            --bg: #f1f5f9;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --glass: rgba(255, 255, 255, 0.8);
+            --glass-border: rgba(0, 0, 0, 0.05);
+            --accent: #0ea5e9;
+            --accent-glow: rgba(14, 165, 233, 0.3);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            transition: background 0.3s, color 0.3s;
+        }
+
+        body {
+            font-family: var(--font);
+            background: var(--bg);
+            color: var(--text-primary);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* Login Screen */
+        #login-screen {
+            position: fixed;
+            inset: 0;
+            z-index: 50;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg);
+        }
+
+        .login-card {
+            background: var(--glass);
+            padding: 2rem;
+            border-radius: var(--card-radius);
+            border: 1px solid var(--glass-border);
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            text-align: center;
+        }
+
+        .login-card h2 {
+            margin-bottom: 1.5rem;
+            color: var(--accent);
+            text-shadow: 0 0 10px var(--accent-glow);
+        }
+
+        input {
+            width: 100%;
+            padding: 0.75rem;
+            margin-bottom: 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--glass-border);
+            background: rgba(0, 0, 0, 0.2);
+            color: var(--text-primary);
+            font-family: inherit;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px var(--accent-glow);
+        }
+
+        button {
+            width: 100%;
+            padding: 0.75rem;
+            border-radius: 8px;
+            border: none;
+            background: var(--accent);
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        /* Dashboard */
+        #dashboard {
+            display: none;
+            flex-direction: column;
+            height: 100%;
+            padding: 1rem;
+            gap: 1rem;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background: var(--glass);
+            border-radius: var(--card-radius);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(10px);
+        }
+
+        .logo {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .actions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .toggle-btn {
+            background: transparent;
+            color: var(--text-secondary);
+            padding: 0.5rem;
+            width: auto;
+            font-size: 1.2rem;
+        }
+
+        .logout-btn {
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--danger);
+            width: auto;
+            padding: 0.5rem 1rem;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .stat-card {
+            background: var(--glass);
+            padding: 1.5rem;
+            border-radius: var(--card-radius);
+            border: 1px solid var(--glass-border);
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--text-primary);
+            margin: 0.5rem 0;
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Log Console */
+        .console-window {
+            flex: 1;
+            background: #000;
+            border-radius: var(--card-radius);
+            border: 1px solid var(--glass-border);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            font-family: 'Fira Code', monospace;
+        }
+
+        .console-header {
+            padding: 0.75rem 1rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            justify-content: space-between;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+        }
+
+        .console-logs {
+            flex: 1;
+            padding: 1rem;
+            overflow-y: auto;
+            color: #d4d4d4;
+            font-size: 0.9rem;
+            line-height: 1.4;
+            scroll-behavior: smooth;
+        }
+
+        .log-entry {
+            margin-bottom: 0.25rem;
+            word-break: break-all;
+        }
+
+        .log-time {
+            color: #569cd6;
+            margin-right: 0.5rem;
+        }
+
+        .log-data {
+            color: #ce9178;
+        }
+
+        /* Utilities */
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Login -->
+    <div id="login-screen">
+        <div class="login-card">
+            <h2>fastPort Admin</h2>
+            <form id="login-form">
+                <input type="text" id="username" placeholder="Admin User" required>
+                <input type="password" id="password" placeholder="Password" required>
+                <button type="submit">Access System</button>
+                <p id="login-error" style="color: var(--danger); margin-top: 1rem; font-size: 0.9rem;"></p>
+            </form>
+        </div>
+    </div>
+
+    <!-- Dashboard -->
+    <div id="dashboard">
+        <header>
+            <div class="logo">⚡ fastPort <span style="font-size:0.8em; color:var(--text-secondary)">v1.0</span></div>
+            <div class="actions">
+                <button class="toggle-btn" id="theme-toggle" title="Switch Theme">🌙</button>
+                <button class="logout-btn" id="logout-btn">Logout</button>
+            </div>
+        </header>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">Active Connections</div>
+                <div class="stat-value" id="stat-conn">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Uptime</div>
+                <div class="stat-value" id="stat-uptime">-</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Memory (MB)</div>
+                <div class="stat-value" id="stat-mem">-</div>
+            </div>
+        </div>
+
+        <div class="console-window">
+            <div class="console-header">
+                <span>SYSTEM LOGS</span>
+                <span id="connection-status" style="color:var(--success)">● Live</span>
+            </div>
+            <div class="console-logs" id="logs-container">
+                <!-- Logs appear here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- State ---
+        let token = localStorage.getItem('fp_token');
+        let theme = localStorage.getItem('fp_theme') || 'dark';
+        let ws = null;
+        let statsInterval = null;
+
+        const ADMIN_SESSION = 'admin_session';
+
+        // --- Elements ---
+        const loginScreen = document.getElementById('login-screen');
+        const dashboard = document.getElementById('dashboard');
+        const loginForm = document.getElementById('login-form');
+        const logsContainer = document.getElementById('logs-container');
+        const themeBtn = document.getElementById('theme-toggle');
+
+        // --- Init ---
+        applyTheme(theme);
+        if (token) {
+            showDashboard();
+        }
+
+        // --- Auth ---
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const u = document.getElementById('username').value;
+            const p = document.getElementById('password').value;
+
+            try {
+                const res = await fetch('/api/admin/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: u, password: p })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    token = `Basic ${btoa(u + ':' + p)}`; // Simple Basic Auth construction
+                    localStorage.setItem('fp_token', token);
+                    showDashboard();
+                } else {
+                    document.getElementById('login-error').innerText = data.error;
+                }
+            } catch (error) {
+                document.getElementById('login-error').innerText = 'Connection Failed';
+            }
+        });
+
+        document.getElementById('logout-btn').addEventListener('click', () => {
+            localStorage.removeItem('fp_token');
+            location.reload();
+        });
+
+        // --- Theme ---
+        themeBtn.addEventListener('click', () => {
+            theme = theme === 'dark' ? 'light' : 'dark';
+            localStorage.setItem('fp_theme', theme);
+            applyTheme(theme);
+        });
+
+        function applyTheme(t) {
+            document.documentElement.setAttribute('data-theme', t);
+            themeBtn.innerText = t === 'dark' ? '🌙' : '☀️';
+        }
+
+        // --- Dashboard Logic ---
+        function showDashboard() {
+            loginScreen.classList.add('hidden');
+            dashboard.style.display = 'flex';
+            startStats();
+            connectWs();
+        }
+
+        async function startStats() {
+            const fetchStats = async () => {
+                try {
+                    const res = await fetch('/api/admin/stats', {
+                        headers: { 'Authorization': token }
+                    });
+                    if (res.status === 401) return logout();
+                    const data = await res.json();
+
+                    document.getElementById('stat-conn').innerText = data.connections;
+                    document.getElementById('stat-uptime').innerText = formatUptime(data.uptime);
+                    document.getElementById('stat-mem').innerText = Math.round(data.memory.heapUsed / 1024 / 1024);
+                } catch (e) { }
+            };
+            fetchStats();
+            statsInterval = setInterval(fetchStats, 2000);
+        }
+
+        function formatUptime(s) {
+            const h = Math.floor(s / 3600);
+            const m = Math.floor((s % 3600) / 60);
+            return `${h}h ${m}m`;
+        }
+
+        function logout() {
+            localStorage.removeItem('fp_token');
+            location.reload();
+        }
+
+        // --- WebSocket Logs ---
+        function connectWs() {
+            const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+            ws = new WebSocket(`${proto}://${location.host}`);
+
+            ws.onopen = () => {
+                // 1. Init as Admin Session (Using hardcoded pass from server env - tricky here)
+                // Wait, client doesn't know ADMIN_PASS for the websocket init message unless user typed it.
+                // We stored 'Basic ...' token. We need to parse it back or just use the same creds.
+                // Let's decode token.
+                const creds = atob(token.split(' ')[1]).split(':');
+
+                ws.send(JSON.stringify({
+                    type: 'init',
+                    sessionName: ADMIN_SESSION,
+                    password: creds[1] // Password
+                }));
+            };
+
+            ws.onmessage = (event) => {
+                const msg = JSON.parse(event.data);
+
+                if (msg.type === 'init_response' && msg.success) {
+                    console.log('Admin Connected. Subscribing to logs...');
+                    ws.send(JSON.stringify({ type: 'subscribe', topic: 'sys/logs' }));
+                }
+
+                if (msg.type === 'message' && msg.topic === 'sys/logs') {
+                    // This is where real log data comes?
+                    // Wait, server sends { type: 'message', data ... } wrapper?
+                    // Check server implementation:
+                    // payload = JSON.stringify({ type: 'log', data: logMsg, timestamp: ... });
+                    // wsHandler forwards "message" type usually? 
+                    // NO, server code manually sent custom payload to subscribers!
+                    // payload = JSON.stringify({ type: 'log', ... })
+                    // So we look for type 'log'.
+                }
+
+                // Direct payload match
+                if (msg.type === 'log') {
+                    addLog(msg.data);
+                }
+            };
+
+            ws.onclose = () => {
+                setTimeout(connectWs, 3000); // Reconnect
+            };
+        }
+
+        function addLog(text) {
+            const div = document.createElement('div');
+            div.className = 'log-entry';
+            const time = new Date().toLocaleTimeString();
+            div.innerHTML = `<span class="log-time">[${time}]</span> <span class="log-data">${text}</span>`;
+            logsContainer.appendChild(div);
+            logsContainer.scrollTop = logsContainer.scrollHeight; // Auto scroll
+
+            // Limit buffer
+            if (logsContainer.children.length > 500) {
+                logsContainer.removeChild(logsContainer.firstChild);
+            }
+        }
+
+    </script>
+</body>
+
+</html>

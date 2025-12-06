@@ -1,0 +1,18 @@
+name: fastport_client
+description: Secure, real-time pub-sub messaging with end-to-end encryption (AES-256) and large file transfer support. Perfect for chat apps, IoT, and real-time collaboration.
+version: 1.0.0
+repository: https://github.com/fastport/fastport
+homepage: https://github.com/fastport/fastport
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  web_socket_channel: ^2.4.0
+  crypto: ^3.0.3
+  uuid: ^4.0.0
+  pointycastle: ^3.7.3
+
+dev_dependencies:
+  lints: ^2.1.0
+  test: ^1.24.0
