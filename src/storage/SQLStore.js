@@ -112,6 +112,11 @@ class SQLStore extends StorageProvider {
     return session ? session.toJSON() : null;
   }
 
+  async getAllSessions() {
+    const sessions = await this.Session.findAll();
+    return sessions.map(s => s.toJSON());
+  }
+
   async deleteSession(sessionName) {
     await this.Session.destroy({ where: { sessionName } });
     // Also delete messages?

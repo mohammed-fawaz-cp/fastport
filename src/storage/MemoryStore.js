@@ -20,6 +20,10 @@ class MemoryStore extends StorageProvider {
     return this.sessions.get(sessionName);
   }
 
+  async getAllSessions() {
+    return Array.from(this.sessions.values());
+  }
+
   async updateSession(sessionName, updates) {
     const session = this.sessions.get(sessionName);
     if (!session) return null;

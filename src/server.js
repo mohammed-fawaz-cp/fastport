@@ -101,45 +101,64 @@ async function startServer() {
         }
      });
 
+     // List Sessions Endpoint
+     app.get('/api/admin/sessions', async (req, res) => {
+        // Basic Auth Check
+        const auth = req.headers.authorization;
+        const creds = Buffer.from(auth.split(' ')[1] || '', 'base64').toString().split(':');
+        
+        if (!auth || creds[0] !== process.env.ADMIN_USER || creds[1] !== process.env.ADMIN_PASS) {
+             return res.status(401).json({ error: 'Unauthorized' });
+        }
+
+        try {
+            const sessions = await sessionManager.getAllSessions();
+            res.json({ success: true, sessions });
+        } catch (error) {
+            res.status(500).json({ success: false, error: error.message });
+        }
+     });
+
   }
 
   // --- Log Streaming (Monkey Patch console.log) ---
   const originalLog = console.log;
+  const SYSTEM_LOG = process.env.SYSTEM_LOG === 'true'; // Default false
+  
+  if (process.env.DEBUG === 'true') {
+      originalLog.call(console, '[DEBUG] Log Streaming Initialized. System Log:', SYSTEM_LOG);
+  }
+
   console.log = (...args) => {
     originalLog.apply(console, args);
-    // Broadcast to Admin Subscribers via 'admin_session'
+    
+    // Broadcast to Admin Subscribers via 'admin_session' or specific session
     if (process.env.ENABLE_WEB_PORTAL === 'true' && sessionManager) {
         try {
-            // We use a dedicated internal session 'admin_session'
-            // We construct a fake message object.
-            // Note: This relies on 'admin_session' being created.
-            // Subscribers (Admin UI) must sub to 'admin_session' / 'sys/logs'
-            
-            // To avoid circular dependency or complex wiring, we can iterate connected admins directly?
-            // But SessionManager is cleaner.
-            // We MUST ensure 'admin_session' exists.
-            
             // Format log
             const logMsg = args.map(a => (typeof a === 'object' ? JSON.stringify(a) : a)).join(' ');
             
-            // Direct injection into SessionManager might be tricky if it expects persistence.
-            // But 'admin_session' is ephemeral.
-            // Let's use a specialized method or just 'publish' if we have access to storage?
-            // Actually, for logs, we DON'T want persistence.
-            // So we should bypass Storage and use SessionManager's in-memory subscriber list directly.
+            // 1. Check for Session Tag [Session:S1]
+            const sessionMatch = logMsg.match(/\[Session:([^\]]+)\]/);
             
-            const subscribers = sessionManager.getSubscribers('admin_session', 'sys/logs');
-            if (subscribers && subscribers.length > 0) {
-                 const payload = JSON.stringify({ type: 'log', data: logMsg, timestamp: Date.now() });
-                 subscribers.forEach(ws => {
-                     if (ws.readyState === 1) ws.send(payload);
-                 });
+            if (sessionMatch && sessionMatch[1]) {
+                // Route to Specific Session
+                const targetSession = sessionMatch[1];
+                sessionManager.publishLog(targetSession, logMsg);
+            } else {
+                // 2. Global System Log
+                if (SYSTEM_LOG) {
+                    sessionManager.publishLog('admin_session', logMsg);
+                }
             }
         } catch (e) {
             // Ignore log errors to prevent loop
         }
     }
   };
+  
+
+  // Initialize Storage
   
 
 
@@ -193,8 +212,20 @@ async function startServer() {
     }, cleanupInterval * 1000);
   }
 
+  // Middleware for Admin Authentication
+  const checkAdminAuth = (req, res, next) => {
+    const auth = req.headers.authorization;
+    if (!auth) return res.status(401).json({ error: 'Missing Authorization Header' });
+    
+    const creds = Buffer.from(auth.split(' ')[1] || '', 'base64').toString().split(':');
+    if (creds[0] !== process.env.ADMIN_USER || creds[1] !== process.env.ADMIN_PASS) {
+         return res.status(401).json({ error: 'Unauthorized: Invalid Admin Credentials' });
+    }
+    next();
+  };
+
   // Session API endpoints
-  app.post('/api/createSession', async (req, res) => {
+  app.post('/api/createSession', checkAdminAuth, async (req, res) => {
     try {
       const result = await sessionManager.createSession(req.body);
       res.json(result);
@@ -203,7 +234,7 @@ async function startServer() {
     }
   });
 
-  app.post('/api/dropSession', async (req, res) => {
+  app.post('/api/dropSession', checkAdminAuth, async (req, res) => {
     try {
       const result = await sessionManager.dropSession(req.body);
       await messageCache.clearSession(req.body.sessionName);
@@ -213,7 +244,7 @@ async function startServer() {
     }
   });
 
-  app.post('/api/suspendSession', async (req, res) => {
+  app.post('/api/suspendSession', checkAdminAuth, async (req, res) => {
     try {
       const result = await sessionManager.suspendSession(req.body);
       res.json(result);

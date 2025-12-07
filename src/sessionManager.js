@@ -177,6 +177,30 @@ class SessionManager {
     return this.storage.getSession(sessionName);
   }
 
+  async getAllSessions() {
+    return this.storage.getAllSessions();
+  }
+
+  // --- Logging Support ---
+
+  publishLog(sessionName, logMsg) {
+    // 1. Strict Isolation Check: Only publish to this session's log topic
+    const topic = 'sys/logs';
+    const subscribers = this.getSubscribers(sessionName, topic);
+    
+    if (subscribers && subscribers.length > 0) {
+      const payload = JSON.stringify({ 
+        type: 'log', 
+        data: logMsg, 
+        timestamp: Date.now() 
+      });
+      
+      subscribers.forEach(ws => {
+        if (ws.readyState === 1) ws.send(payload);
+      });
+    }
+  }
+
   // --- Device Token Methods (FCM) ---
 
   async registerDeviceToken(sessionName, userId, fcmToken, deviceId, platform) {
