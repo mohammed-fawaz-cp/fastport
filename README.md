@@ -1,4 +1,4 @@
-# fastPort 🚀
+# <img src="public/logo.svg" alt="FastPort" height="64" width="64" style="vertical-align: middle;"> fastPort 🚀
 
 A fully secure, scalable publish-subscribe communication system with multiple isolated virtual brokers (sessions).
 

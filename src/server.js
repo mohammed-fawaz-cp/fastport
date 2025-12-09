@@ -64,9 +64,20 @@ async function startServer() {
   const dbType = process.env.DB_TYPE || 'memory';
 
   // --- Web Admin Portal ---
+  // --- Web Admin Portal ---
   if (process.env.ENABLE_WEB_PORTAL === 'true') {
      console.log('Admin Portal Enabled at /admin');
+     // Serve Global Assets (like logo.svg)
+     app.use(express.static('public'));
+     
      app.use('/admin', express.static('public/admin'));
+
+  // --- Test Portal (Playground) ---
+  if (process.env.ENABLE_TEST_PORTAL === 'true') {
+     console.log('Test Portal Enabled at /test');
+     app.use('/test', express.static('public/test'));
+  }
+
 
      // Simple Stats API
      app.get('/api/admin/stats', (req, res) => {
@@ -78,8 +89,8 @@ async function startServer() {
              return res.status(401).json({ error: 'Unauthorized' });
         }
 
-        console.log(`Admin accessed stats. Clients: ${wss.clients.size}`);
-
+        // Removed spammy console log
+        
         res.json({
             uptime: process.uptime(),
             memory: process.memoryUsage(),

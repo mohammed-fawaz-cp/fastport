@@ -24,6 +24,11 @@ document.addEventListener('DOMContentLoaded', () => {
     if (token) {
         showDashboard();
     }
+
+    // Start polling if we land on sessions
+    setInterval(() => {
+        if (activeTab === 'sessions') loadSessions();
+    }, 5000); // Poll every 5 seconds for session updates
 });
 
 // --- Auth & Logout ---
@@ -96,7 +101,7 @@ function renderSessions(sessions) {
 
         const tr = document.createElement('tr');
         const expiry = s.sessionExpiry ? new Date(s.sessionExpiry).toLocaleString() : 'Never';
-        const statusClass = s.suspended ? 'status-suspended' : 'status-active';
+        const statusClass = s.suspended ? 'badge-suspended' : 'badge-active';
         const statusText = s.suspended ? 'Suspended' : 'Active';
         
         // Escape Values
@@ -106,9 +111,9 @@ function renderSessions(sessions) {
         tr.innerHTML = `
             <td>${sName}</td>
             <td>${expiry}</td>
-            <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+            <td><span class="badge ${statusClass}">${statusText}</span></td>
             <td>
-                <div class="action-group">
+                <div class="action-group" style="display:flex; gap:0.5rem;">
                     <button class="btn-sm" onclick="viewSessionLogs('${sName}', '${sPass}')" title="View Logs">👁️</button>
                     <button class="btn-sm" onclick="toggleSuspend('${sName}', '${sPass}', '${s.secretKey}', ${!s.suspended})">
                         ${s.suspended ? 'Resume' : 'Suspend'}
@@ -120,6 +125,7 @@ function renderSessions(sessions) {
         tbody.appendChild(tr);
     });
 }
+
 
 const fcmFields = document.getElementById('fcm-fields');
 
@@ -227,18 +233,20 @@ window.viewSessionLogs = function(sessionName, password) {
     currentMonitoredSession = sessionName;
     currentMonitoredPass = password;
     
-    // Reconnect logic
-    reconnectWs();
-    
-    // Update UI
+    // UI Feedback
     document.getElementById('current-session-label').innerText = `SESSION: ${sessionName}`;
     document.getElementById('console-title').innerHTML = `
         SESSION LOGS 
         <button class="btn-sm btn-ghost" style="font-size:0.6em; margin-left:10px;" onclick="restoreGlobalLogs()">Switch to Global</button>
     `;
     
-    // Clear current logs
+    // Clear current logs & reconnect
     logsContainer.innerHTML = '<div class="log-entry" style="color:var(--accent)">--- Switching to Session Context ---</div>';
+    
+    // Forced small delay to allow UI to paint
+    setTimeout(() => {
+        reconnectWs();
+    }, 100);
 }
 
 window.restoreGlobalLogs = function() {
@@ -375,7 +383,7 @@ function addLog(text) {
     const div = document.createElement('div');
     div.className = 'log-entry';
     const time = new Date().toLocaleTimeString();
-    div.innerHTML = `<span class="log-time">[${time}]</span> <span class="log-data">${text}</span>`;
+    div.innerHTML = `<span class="log-ts">[${time}]</span> <span class="log-msg">${text}</span>`;
     
     if(logsContainer) {
         logsContainer.appendChild(div);

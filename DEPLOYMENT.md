@@ -406,3 +406,43 @@ Use tools like:
 - New Relic
 - Grafana + Prometheus
 - CloudWatch (AWS)
+
+## Deploying to Render
+
+Render is a cloud platform that natively supports Node.js web services.
+
+### 1. Simple Deployment (Ephemeral)
+
+**Note:** This method uses `MemoryStore`. All sessions and messages will be lost if the server restarts (which happens frequently on free tiers).
+
+1.  Push your `fastPort` code to a GitHub/GitLab repository.
+2.  Log in to [Render Dashboard](https://dashboard.render.com/).
+3.  Click **New +** -> **Web Service**.
+4.  Connect your repository.
+5.  Configure the service:
+    *   **Name:** `fastport-server`
+    *   **Environment:** `Node`
+    *   **Build Command:** `npm install`
+    *   **Start Command:** `npm start`
+6.  Click **Advanced** -> **Environment Variables** and add:
+    *   `ADMIN_USER`: `admin` (or your choice)
+    *   `ADMIN_PASS`: `securepassword`
+    *   `AES_KEY`: `(Output from node utils/generate_key.js)`
+7.  Click **Create Web Service**.
+
+### 2. Persistent Deployment (Recommended)
+
+To save sessions and messages across restarts, you must use a **Render Disk** and configure `fastPort` to use SQLite.
+
+1.  Follow steps 1-5 above.
+2.  Under **Disks** (paid feature), click **Add Disk**:
+    *   **Name:** `fastport-data`
+    *   **Mount Path:** `/app/data`
+    *   **Size:** 1GB
+3.  Add an Environment Variable:
+    *   `STORAGE_TYPE`: `sqlite`
+    *   `DB_PATH`: `/app/data/fastport.sqlite`
+4.  Deploy. Your data will now survive restarts.
+
+### 3. WebSocket Configuration
+Render supports WebSockets automatically in all tiers. No special configuration is needed.

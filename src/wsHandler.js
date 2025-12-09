@@ -9,11 +9,19 @@ export function handleWebSocketConnection(ws, sessionManager, messageCache, fcmS
 
   ws.on('message', async (data) => {
     try {
-      // Determine if text (JSON) or binary
+      // Robust detection: Try to parse as JSON first.
+      // 'ws' library often delivers text frames as Buffers.
+      let message;
       let isBinary = false;
-      if (typeof data !== 'string') {
-          // Node ws: data is Buffer (or ArrayBuffer)
-          // Treat Buffer as binary
+
+      try {
+          const strData = data.toString();
+          message = JSON.parse(strData);
+          // If valid JSON but missing 'type', might still be just data. 
+          // But our protocol expects 'type'. 
+          if (!message.type) throw new Error('No type');
+      } catch (e) {
+          // Not JSON -> Treat as Binary
           isBinary = true;
       }
       
@@ -22,7 +30,6 @@ export function handleWebSocketConnection(ws, sessionManager, messageCache, fcmS
           await handleBinaryMessage(data);
       } else {
           // Text Frame -> JSON Control Message
-          const message = JSON.parse(data.toString());
           switch (message.type) {
             case 'init': await handleInit(message); break;
             case 'subscribe': handleSubscribe(message); break;
@@ -133,8 +140,14 @@ export function handleWebSocketConnection(ws, sessionManager, messageCache, fcmS
 
   // Stream-Through for Binary Chunks
   async function handleBinaryMessage(buffer) {
+     // Ignore 0-byte keep-alives or very small non-protocol buffers to reduce noise
+     if (buffer.length === 0) return;
+
      if (!clientSession) {
-         console.log('[Binary] Rejected: No session');
+         // Only log if it actually looks like a valid protocol frame (length > 1) to avoid spam from random noise
+         if (buffer.length > 5) {
+             console.log('[Binary] Rejected: No session');
+         }
          return;
      }
      
