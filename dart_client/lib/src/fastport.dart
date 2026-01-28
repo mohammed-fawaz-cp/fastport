@@ -151,6 +151,12 @@ class FastPort {
         case 'end_file':
           _handleFileSignal(message);
           break;
+        case 'fcm_token_response':
+        case 'fcm_unregister_response':
+        case 'registered_devices_response':
+          // FCM responses - can be handled by callbacks if needed
+          print('[FCM] Response: ${message['type']} - ${message['success']}');
+          break;
         case 'subscribe_response':
         case 'unsubscribe_response':
         case 'publish_response':
@@ -280,6 +286,52 @@ class FastPort {
     });
 
     print('[FCM] Token registration sent for user: $userId');
+  }
+
+  /// Unregister FCM token (e.g., on logout or device removal)
+  /// 
+  /// [userId] - Unique identifier for the user
+  /// [deviceId] - Unique device identifier to unregister
+  Future<void> unregisterFCMToken({
+    required String userId,
+    required String deviceId,
+  }) async {
+    if (!_initialized) throw Exception('FastPort not initialized');
+
+    // Create payload
+    final payload = jsonEncode({
+      'deviceId': deviceId,
+    });
+
+    // Encrypt payload
+    final encryptedData = _crypto.encryptMessage(payload);
+    final hash = _crypto.generateHash(encryptedData);
+
+    // Send to server
+    _send({
+      'type': 'unregister_fcm_token',
+      'userId': userId,
+      'encryptedData': encryptedData,
+      'hash': hash,
+    });
+
+    print('[FCM] Token unregistration sent for user: $userId, device: $deviceId');
+  }
+
+  /// Get list of registered devices for a user
+  /// 
+  /// [userId] - Unique identifier for the user
+  Future<void> getRegisteredDevices({
+    required String userId,
+  }) async {
+    if (!_initialized) throw Exception('FastPort not initialized');
+
+    _send({
+      'type': 'get_registered_devices',
+      'userId': userId,
+    });
+
+    print('[FCM] Requested device list for user: $userId');
   }
 
   Future<void> sendFile(String filePath, String topic) async {

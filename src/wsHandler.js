@@ -49,6 +49,16 @@ export function handleWebSocketConnection(ws, sessionManager, messageCache, fcmS
                 await handleFCMTokenRegistration(message);
                 break;
             
+            // FCM Token Unregistration
+            case 'unregister_fcm_token':
+                await handleFCMTokenUnregistration(message);
+                break;
+            
+            // Get Registered Devices
+            case 'get_registered_devices':
+                await handleGetRegisteredDevices(message);
+                break;
+            
             default:
               ws.send(JSON.stringify({ error: 'Unknown message type' }));
           }
@@ -426,6 +436,96 @@ export function handleWebSocketConnection(ws, sessionManager, messageCache, fcmS
       console.error('[FCM] Token registration failed:', error.message);
       ws.send(JSON.stringify({
         type: 'fcm_token_response',
+        success: false,
+        error: error.message
+      }));
+    }
+  }
+
+  async function handleFCMTokenUnregistration(message) {
+    if (!clientSession) {
+      return ws.send(JSON.stringify({ 
+        type: 'fcm_unregister_response',
+        success: false,
+        error: 'Not initialized' 
+      }));
+    }
+
+    const { userId, encryptedData, hash } = message;
+    
+    if (!userId || !encryptedData || !hash) {
+      return ws.send(JSON.stringify({
+        type: 'fcm_unregister_response',
+        success: false,
+        error: 'Missing required fields'
+      }));
+    }
+
+    try {
+      const session = await sessionManager.getSession(clientSession);
+      if (!session) throw new Error('Session not found');
+
+      // Verify hash
+      const computedHash = crypto.createHash('sha256').update(encryptedData).digest('hex');
+      if (computedHash !== hash) throw new Error('Hash verification failed');
+
+      // Decrypt payload
+      const decrypted = sessionManager.decryptData(encryptedData, session.secretKey);
+      const { deviceId } = JSON.parse(decrypted);
+
+      if (!deviceId) throw new Error('deviceId required');
+
+      // Delete from DB
+      await sessionManager.deleteDeviceToken(clientSession, userId, deviceId);
+
+      console.log(`[FCM] Token unregistered for user ${userId}, device ${deviceId}`);
+
+      ws.send(JSON.stringify({
+        type: 'fcm_unregister_response',
+        success: true,
+        message: 'Token unregistered successfully'
+      }));
+    } catch (error) {
+      console.error('[FCM] Token unregistration failed:', error.message);
+      ws.send(JSON.stringify({
+        type: 'fcm_unregister_response',
+        success: false,
+        error: error.message
+      }));
+    }
+  }
+
+  async function handleGetRegisteredDevices(message) {
+    if (!clientSession) {
+      return ws.send(JSON.stringify({ 
+        type: 'registered_devices_response',
+        success: false,
+        error: 'Not initialized' 
+      }));
+    }
+
+    const { userId } = message;
+    
+    if (!userId) {
+      return ws.send(JSON.stringify({
+        type: 'registered_devices_response',
+        success: false,
+        error: 'userId required'
+      }));
+    }
+
+    try {
+      const devices = await sessionManager.getDeviceList(clientSession, userId);
+
+      ws.send(JSON.stringify({
+        type: 'registered_devices_response',
+        success: true,
+        devices: devices
+      }));
+    } catch (error) {
+      console.error('[FCM] Get devices failed:', error.message);
+      ws.send(JSON.stringify({
+        type: 'registered_devices_response',
         success: false,
         error: error.message
       }));

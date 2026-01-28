@@ -196,7 +196,7 @@ class SQLStore extends StorageProvider {
   async getDeviceTokens(sessionName, userId) {
     const tokens = await this.DeviceToken.findAll({
       where: { sessionName, userId },
-      attributes: ['fcmToken', 'deviceId', 'platform']
+      attributes: ['fcmToken', 'deviceId', 'platform', 'createdAt', 'updatedAt']
     });
     return tokens.map(t => t.toJSON());
   }

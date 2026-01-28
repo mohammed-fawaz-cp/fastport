@@ -253,6 +253,22 @@ class SessionManager {
     }
   }
 
+  async getDeviceList(sessionName, userId) {
+    try {
+      const tokens = await this.storage.getDeviceTokens(sessionName, userId);
+      // Return device info without decrypted tokens (for privacy)
+      return tokens.map(t => ({
+        deviceId: t.deviceId,
+        platform: t.platform,
+        createdAt: t.createdAt,
+        updatedAt: t.updatedAt
+      }));
+    } catch (error) {
+      console.error('[SessionManager] getDeviceList failed:', error.message);
+      return [];
+    }
+  }
+
   // --- User Connection Tracking (for FCM offline detection) ---
 
   registerUserConnection(sessionName, userId, ws) {
