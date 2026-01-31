@@ -427,6 +427,7 @@ Render is a cloud platform that natively supports Node.js web services.
 6.  Click **Advanced** -> **Environment Variables** and add:
     *   `ADMIN_USER`: `admin` (or your choice)
     *   `ADMIN_PASS`: `securepassword`
+    *   `ENABLE_WEB_PORTAL`: `true`
     *   `AES_KEY`: `(Output from node utils/generate_key.js)`
 7.  Click **Create Web Service**.
 
